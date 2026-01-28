@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { HeaderComponent } from '../header/header.component';
 import { FormsModule } from '@angular/forms';
 import { GoogleGenAI, Chat } from "@google/genai";
+import { environment } from '../../environments/environment';
 
 interface DesignerItem {
   id: number;
@@ -309,7 +310,7 @@ Catálogo Disponible:
 })
 export class SimulatorComponent implements OnInit {
   @ViewChild('chatContainer') chatContainer!: ElementRef;
-  
+
   // Dependencies
   private genAI: GoogleGenAI;
   private chatSession: Chat | null = null;
@@ -327,7 +328,7 @@ export class SimulatorComponent implements OnInit {
   chatMessages = signal<ChatMessage[]>([
     { text: 'Bienvenido al Diseñador GRID. Soy tu asistente curatorial impulsado por Gemini. He analizado la arquitectura de tu espacio y la luz es excelente. ¿Tienes alguna preferencia de estilo hoy?', isUser: false, time: new Date() }
   ]);
-  
+
   isAiTyping = signal(false);
   currentInput = '';
 
@@ -344,37 +345,39 @@ export class SimulatorComponent implements OnInit {
     const count = this.wallItems().length;
     let mood = '';
     let palette: string[] = [];
-    
+
     if (count === 0) {
-        return {
-            palette: ['#222', '#333', '#444'],
-            score: 0,
-            negativeSpace: 100,
-            coherence: 0,
-            mood: 'El lienzo está vacío. Esperando input creativo.'
-        };
+      return {
+        palette: ['#222', '#333', '#444'],
+        score: 0,
+        negativeSpace: 100,
+        coherence: 0,
+        mood: 'El lienzo está vacío. Esperando input creativo.'
+      };
     } else if (count === 1) {
-        mood = 'Minimalismo focalizado. Una pieza central fuerte crea autoridad en el espacio.';
-        palette = ['#E8E8E8', '#2C2C2C', '#7D8491'];
+      mood = 'Minimalismo focalizado. Una pieza central fuerte crea autoridad en el espacio.';
+      palette = ['#E8E8E8', '#2C2C2C', '#7D8491'];
     } else if (count === 2) {
-        mood = 'Dualidad equilibrada. La relación entre dos obras genera un diálogo visual interesante.';
-        palette = ['#E8E8E8', '#2C2C2C', '#A1683A', '#4A5859'];
+      mood = 'Dualidad equilibrada. La relación entre dos obras genera un diálogo visual interesante.';
+      palette = ['#E8E8E8', '#2C2C2C', '#A1683A', '#4A5859'];
     } else {
-        mood = 'Composición compleja. La "Calma Dinámica" actual es ideal para espacios de concentración creativa.';
-        palette = ['#E8E8E8', '#2C2C2C', '#7D8491', '#A1683A', '#1152d4'];
+      mood = 'Composición compleja. La "Calma Dinámica" actual es ideal para espacios de concentración creativa.';
+      palette = ['#E8E8E8', '#2C2C2C', '#7D8491', '#A1683A', '#1152d4'];
     }
 
     return {
-        palette,
-        score: Math.min(100, 70 + (count * 10)),
-        negativeSpace: Math.max(20, 100 - (count * 15)),
-        coherence: Math.min(98, 85 + (count * 2)),
-        mood
+      palette,
+      score: Math.min(100, 70 + (count * 10)),
+      negativeSpace: Math.max(20, 100 - (count * 15)),
+      coherence: Math.min(98, 85 + (count * 2)),
+      mood
     };
   });
 
   constructor() {
-    this.genAI = new GoogleGenAI({ apiKey: process.env['API_KEY'] });
+    // TODO: Replace 'YOUR_API_KEY_HERE' in src/environments/environment.ts
+    // process.env does not exist in the browser.
+    this.genAI = new GoogleGenAI({ apiKey: environment.apiKey });
   }
 
   ngOnInit() {
@@ -383,9 +386,9 @@ export class SimulatorComponent implements OnInit {
 
   initChat() {
     this.chatSession = this.genAI.chats.create({
-        model: 'gemini-2.5-flash',
-        config: {
-            systemInstruction: `Eres un curador de arte experto y sofisticado para la plataforma GRID.
+      model: 'gemini-2.5-flash',
+      config: {
+        systemInstruction: `Eres un curador de arte experto y sofisticado para la plataforma GRID.
             Tu objetivo es ayudar al usuario a diseñar una pared de galería (Gallery Wall).
             
             Tienes acceso al contexto del diseño actual (obras en la pared, precio, estilo) que se te enviará como mensajes ocultos del sistema.
@@ -398,7 +401,7 @@ export class SimulatorComponent implements OnInit {
             - Mantén las respuestas bajo 50 palabras a menos que se pida explicación detallada.
             
             ${CATALOG_CONTEXT}`,
-        }
+      }
     });
   }
 
@@ -406,7 +409,7 @@ export class SimulatorComponent implements OnInit {
   moveToWall(item: DesignerItem) {
     if (this.wallItems().find(i => i.id === item.id)) return;
     const newItem = { ...item, x: 300 + (this.wallItems().length * 40), y: 200 };
-    
+
     this.wallItems.update(items => [...items, newItem]);
     this.workbenchItems.update(items => items.filter(i => i.id !== item.id));
 
@@ -416,19 +419,19 @@ export class SimulatorComponent implements OnInit {
   moveToWorkbench(item: DesignerItem) {
     this.wallItems.update(items => items.filter(i => i.id !== item.id));
     this.workbenchItems.update(items => [...items, item]);
-    
+
     // Optional: Trigger reaction on remove, but maybe too chatty. keeping silent for remove unless empty.
-    if(this.wallItems().length === 0) {
-        this.triggerAiReaction("El usuario ha limpiado la pared. Anímalo a empezar de nuevo con una nueva perspectiva.");
+    if (this.wallItems().length === 0) {
+      this.triggerAiReaction("El usuario ha limpiado la pared. Anímalo a empezar de nuevo con una nueva perspectiva.");
     }
   }
 
   resetWall() {
     const all = [...this.wallItems(), ...this.workbenchItems()];
     this.workbenchItems.update(current => {
-         const currentIds = new Set(current.map(c => c.id));
-         const toAdd = this.wallItems().filter(w => !currentIds.has(w.id));
-         return [...current, ...toAdd];
+      const currentIds = new Set(current.map(c => c.id));
+      const toAdd = this.wallItems().filter(w => !currentIds.has(w.id));
+      return [...current, ...toAdd];
     });
     this.wallItems.set([]);
     this.triggerAiReaction("El usuario ha reiniciado el diseño completamente.");
@@ -439,8 +442,8 @@ export class SimulatorComponent implements OnInit {
     event.preventDefault();
     this.activeDragItem = item;
     this.dragOffset = {
-        x: event.clientX - item.x,
-        y: event.clientY - item.y
+      x: event.clientX - item.x,
+      y: event.clientY - item.y
     };
   }
 
@@ -448,8 +451,8 @@ export class SimulatorComponent implements OnInit {
     if (!this.activeDragItem) return;
     const newX = event.clientX - this.dragOffset.x;
     const newY = event.clientY - this.dragOffset.y;
-    this.wallItems.update(items => 
-        items.map(i => i.id === this.activeDragItem?.id ? { ...i, x: newX, y: newY } : i)
+    this.wallItems.update(items =>
+      items.map(i => i.id === this.activeDragItem?.id ? { ...i, x: newX, y: newY } : i)
     );
   }
 
@@ -460,7 +463,7 @@ export class SimulatorComponent implements OnInit {
   // Chat Logic
   async sendMessage() {
     if (!this.currentInput.trim() || !this.chatSession) return;
-    
+
     const userText = this.currentInput;
     this.chatMessages.update(msgs => [...msgs, { text: userText, isUser: true, time: new Date() }]);
     this.currentInput = '';
@@ -468,8 +471,8 @@ export class SimulatorComponent implements OnInit {
     this.isAiTyping.set(true);
 
     try {
-        // Inject context invisibly to the user
-        const contextMsg = `
+      // Inject context invisibly to the user
+      const contextMsg = `
         [CONTEXTO ACTUAL DEL SISTEMA]
         Obras en pared: ${this.wallItems().map(i => i.title).join(', ')}
         Precio Total: ${this.totalPrice()}
@@ -477,52 +480,52 @@ export class SimulatorComponent implements OnInit {
         Usuario dice: "${userText}"
         `;
 
-        // FIXED: Wrap in object with 'message' property
-        const response = await this.chatSession.sendMessage({ message: contextMsg });
-        
-        this.chatMessages.update(msgs => [...msgs, { 
-            text: response.text, 
-            isUser: false, 
-            time: new Date() 
-        }]);
+      // FIXED: Wrap in object with 'message' property
+      const response = await this.chatSession.sendMessage({ message: contextMsg });
+
+      this.chatMessages.update(msgs => [...msgs, {
+        text: response.text,
+        isUser: false,
+        time: new Date()
+      }]);
     } catch (error) {
-        console.error("AI Error", error);
-        this.chatMessages.update(msgs => [...msgs, { 
-            text: "Disculpa, perdí la conexión con el servidor de curaduría. ¿Podrías repetirlo?", 
-            isUser: false, 
-            time: new Date() 
-        }]);
+      console.error("AI Error", error);
+      this.chatMessages.update(msgs => [...msgs, {
+        text: "Disculpa, perdí la conexión con el servidor de curaduría. ¿Podrías repetirlo?",
+        isUser: false,
+        time: new Date()
+      }]);
     } finally {
-        this.isAiTyping.set(false);
-        this.scrollToBottom();
+      this.isAiTyping.set(false);
+      this.scrollToBottom();
     }
   }
 
   async triggerAiReaction(systemEvent: string) {
     if (!this.chatSession) return;
     this.isAiTyping.set(true);
-    
+
     try {
-        // FIXED: Wrap in object with 'message' property
-        const response = await this.chatSession.sendMessage({ message: `[EVENTO DE SISTEMA]: ${systemEvent}` });
-        this.chatMessages.update(msgs => [...msgs, { 
-            text: response.text, 
-            isUser: false, 
-            time: new Date() 
-        }]);
-        this.scrollToBottom();
+      // FIXED: Wrap in object with 'message' property
+      const response = await this.chatSession.sendMessage({ message: `[EVENTO DE SISTEMA]: ${systemEvent}` });
+      this.chatMessages.update(msgs => [...msgs, {
+        text: response.text,
+        isUser: false,
+        time: new Date()
+      }]);
+      this.scrollToBottom();
     } catch (e) {
-        console.error("AI Reaction Error", e);
+      console.error("AI Reaction Error", e);
     } finally {
-        this.isAiTyping.set(false);
+      this.isAiTyping.set(false);
     }
   }
 
   scrollToBottom() {
     setTimeout(() => {
-        if(this.chatContainer) {
-            this.chatContainer.nativeElement.scrollTop = this.chatContainer.nativeElement.scrollHeight;
-        }
+      if (this.chatContainer) {
+        this.chatContainer.nativeElement.scrollTop = this.chatContainer.nativeElement.scrollHeight;
+      }
     }, 100);
   }
 }

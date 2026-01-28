@@ -15,9 +15,9 @@ import { RouterLink } from '@angular/router';
         <div class="max-w-[1200px] w-full grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div class="lg:col-span-7 flex flex-col gap-8">
             <div class="flex flex-wrap items-center gap-2">
-              <a class="text-slate-400 dark:text-[#9da6b9] text-sm font-medium leading-normal hover:text-primary" href="#">Carrito</a>
+              <a class="text-slate-400 dark:text-[#9da6b9] text-sm font-medium leading-normal hover:text-primary" routerLink="/catalog">Galería</a>
               <span class="text-slate-400 dark:text-[#9da6b9] text-sm font-medium leading-normal">/</span>
-              <a class="text-slate-400 dark:text-[#9da6b9] text-sm font-medium leading-normal hover:text-primary" href="#">Envío</a>
+              <a class="text-slate-400 dark:text-[#9da6b9] text-sm font-medium leading-normal hover:text-primary" routerLink="/catalog">Colección</a>
               <span class="text-slate-400 dark:text-[#9da6b9] text-sm font-medium leading-normal">/</span>
               <span class="text-slate-900 dark:text-white text-sm font-semibold leading-normal">Finalizar y Experiencia</span>
             </div>
@@ -179,4 +179,4 @@ import { RouterLink } from '@angular/router';
     </div>
   `
 })
-export class CheckoutComponent {}
+export class CheckoutComponent { }

@@ -3,6 +3,7 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { HeaderComponent } from '../header/header.component';
 import { FooterComponent } from '../footer/footer.component';
 import { RouterLink, ActivatedRoute } from '@angular/router';
+import { SupabaseService } from '../../services/supabase.service';
 
 interface Artwork {
   id: number;
@@ -17,7 +18,7 @@ interface Artwork {
 
 @Component({
   selector: 'app-catalog',
-  imports: [HeaderComponent, FooterComponent, RouterLink],
+  imports: [HeaderComponent, RouterLink],
   template: `
     <div class="bg-background-light dark:bg-background-dark text-white font-display overflow-x-hidden min-h-screen flex flex-col">
       <app-header></app-header>
@@ -216,96 +217,17 @@ interface Artwork {
 })
 export class CatalogComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private supabase = inject(SupabaseService);
+
   currentSort = signal('Novedades');
   activeFilter = signal('all');
   activePsychology = signal<string | null>(null);
 
   // Data Source
-  artworks: Artwork[] = [
-    {
-      id: 1,
-      title: 'Equilibrio Abstracto',
-      price: '240,00€',
-      priceValue: 240,
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAUD06WQUmgwMpwYC3PpaDxMRp9M1jMXtonflGxivaZRO0FB1em3x5lhDWUTok-H9rGtoSghhm8I4vlePHlz6_vrKd6RZbcBQfMEE78jRPk3UgPGXK1ZaUJzBy9kj421sbO9Nbuy3bHYhlGnGcvUEkehzkMcFREdeOZjzwp779vILaVTwmjcfU4_vXQLZAGCOddC3DN2Y8T_NmBhxNyHhNF8QJb4pcrGoOMUkz-rPWPxjnCPZoV4HTc8ZZXkC-DKdbm1_DHp8oqtvXL',
-      paper: 'Museum Heritage 310',
-      tags: ['limited', 'abstract', 'balance'],
-      psychology: 'balance'
-    },
-    {
-      id: 2,
-      title: 'Flujo Vibrante',
-      price: '310,00€',
-      priceValue: 310,
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuArl8LbVMmqqq_BgrS84THtSWDtTid_urZRzbJlcNp1bOQbnFXrN0grVPURHhGkFDiPRgZxuEAmyyqPsgHE1rAh08R9HWg9WAkcMHama31PBaW_B0pso2fzznetnzhpvG6LeiNk7v9Yb896xhAkS0ZXoeDkDf2tcU5ZKvxE2nEK9pTydcQLoP3yKDDth4HGLXDEXpy1_nyR3dMhjISe3dPM40dU3RErsHzOYgFNraa1R3eZY1NrTeUkx4gIuFDMTpcCoi847CH-RTKv',
-      paper: 'Museum Heritage 310',
-      tags: ['trending', 'energy'],
-      psychology: 'energy'
-    },
-    {
-      id: 3,
-      title: 'Soledad Profunda',
-      price: '195,00€',
-      priceValue: 195,
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBdxvM1apE-x44SiKq3_f_AnoeQl7uo2vpMqSh4c5b-z8UhL-fYGICrXDLX9KkdTu0YKLrF3cX5KNkzzGtMLqlyvtd7VknEuFoO5JSa_h0-nYczJnpc0uWmTAqDhdMHIruAWofes3OEY1mYeyEs-ynwMwEYtl29lFQLlgfBWCZDRZuoGTL0vqnhJmqFvEYgk0DjDaHXerkIRusH4QYMTednGW7vIttG1X8cPqRWPrF8ySuW4VlB_2SoNI4qcSH9H8e7eCY3SzhhIe8D',
-      paper: 'Photo Rag Metallic',
-      tags: ['introspection', 'landscape'],
-      psychology: 'introspection'
-    },
-    {
-      id: 4,
-      title: 'Luz Etérea',
-      price: '350,00€',
-      priceValue: 350,
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDiugk5XHHvgNpDKUNlWnQCGUWJ8iL6N5oSkxvJVjnMyJGID4F-WC24cxPMMmJIubfGofqP76mTYoSBIiMkrb94EaAtv-FVLbOEnAW1n2XwWtO5HpAUpdI5ZjLLsku_gyVh_YTpLh2q3b9HxW88AZ56yksx_z6s3mRpmlAA9srQ3_FWsZaJ07sM2kyonUMi8NMlKv-BDwyIjw7dgnHnOppf5-P0j_RZh254FL1OCY4tyZiOcnXkJK3nWygnkZj0IPvj0mVe09nBWGt0',
-      paper: 'Museum Heritage 310',
-      tags: ['trending', 'large', 'serenity'],
-      psychology: 'serenity'
-    },
-    {
-      id: 5,
-      title: 'Caos Organizado',
-      price: '280,00€',
-      priceValue: 280,
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCJRs3iOHdePz9qtRNYvUVSzu_5M_EnOxVD44nt9vq2mz37XKMld6850Yy0kb6Z4cCZiQcD37HCshnFT0DloTgoCHoWh98cVeGQinQiRX4mgpb5w02KQQvrs3T2_a9VE3CvEF5ldcKojHoWaz_A8SFiPiueoPLfrdkz0EdHAsdlU5bdaYNtDMo6KxyD9lD-X8EXZo_YQUvofdGSWP8jfxHUBQBB1qBi94_6Kwy8OaHY6V1L2Kc5ysWeyP3v6_IYDf6Lh_uLbvt-0vcG',
-      paper: 'Baryta Rag',
-      tags: ['energy', 'abstract'],
-      psychology: 'energy'
-    },
-    {
-      id: 6,
-      title: 'Horizonte Azul',
-      price: '420,00€',
-      priceValue: 420,
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC4BKvpFblAcIv15Pua35krt9YVUNcFH-9zW_T88DkPVTftBctN0PKKvr3S60FBivFxy5fblAzI1s2TtjCGodugesdxXwn86hoJg6fx7u638qouE9MC-waGjO1s9GycJlsbxstL9YRVAvktaYYBvp5VJ-bVid-d9GfoitnfyDB4VY-FqY6Rc1EeVYNgh07ydokkN5C8YJGWBJW4FDzm_1AAh8BIevCCkcXzWxV721QT6tFD7c15_U14u_L6dTto9NbOAAkt6fFJhIQ-',
-      paper: 'Museum Heritage 310',
-      tags: ['large', 'balance', 'trending'],
-      psychology: 'balance'
-    },
-    {
-        id: 7,
-        title: 'Nebula Oscura',
-        price: '210,00€',
-        priceValue: 210,
-        image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCcSZuZME3ogVbQNqqublULSJ5DAfUJBgROqVC5H1lBUHOCOlqrH33KaENPcSW9uzJg4Wzk6HuZmaFh8raIjjAh46VWM-jVuS5Kndkuq-9Y77X9RgRDHPxnTiyC-VH9VU9_BsIcGwT3Lp0jCm1iNZEmP2oJqhpfFptmF9f5-mLeMIYIAH6tzPlRXP1lDY82n_0P4UAmf-1d2CXtBW8PjgEn_3m--ybmpTMxLd5_dO57QGFN6jbDvP5_GptWL4BJJVRjdDvHXLIctGXx',
-        paper: 'Photo Rag Metallic',
-        tags: ['introspection', 'abstract'],
-        psychology: 'introspection'
-    },
-    {
-        id: 8,
-        title: 'Calma Vegetal',
-        price: '180,00€',
-        priceValue: 180,
-        image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBOKNzD1sxE68YBqkQVy8tTGXS4EUsaSZ7gtwRTdfZjXR-7MhbujEqufWNr7s8nqj3pXCMhdUZH1Bw18m7HQMZVkp14e8zOAABts-YS8CFBQDqZE5gNswYvvfaTuyLNtwffxHrHAVWT-_3m797vgL0HhcE5Bj1WUUTZbVhikfrArd3W0wS7sw4NW2BhDvRd1tOoYSqLSlFpAQtpyjiKgFjMNjErXNiS4DOwNAI40wEDHEmmVzeB9MeMcAhjkVrHPjVA1_9oxCuaUYB5',
-        paper: 'Museum Heritage 310',
-        tags: ['serenity', 'landscape'],
-        psychology: 'serenity'
-    }
-  ];
+  artworks = signal<Artwork[]>([]);
 
   filteredArtworks = computed(() => {
-    return this.artworks.filter(art => {
+    return this.artworks().filter(art => {
       // 1. Filter by Top Category
       const filter = this.activeFilter();
       let matchesFilter = true;
@@ -321,7 +243,7 @@ export class CatalogComponent implements OnInit {
     });
   });
 
-  ngOnInit() {
+  async ngOnInit() {
     this.route.queryParams.subscribe(params => {
       if (params['filter'] === 'trending') {
         this.currentSort.set('Tendencias Semanales');
@@ -331,14 +253,36 @@ export class CatalogComponent implements OnInit {
         this.activeFilter.set('all');
       }
     });
+
+    await this.fetchProducts();
+  }
+
+  async fetchProducts() {
+    const { data, error } = await this.supabase.supabase
+      .from('products')
+      .select('*');
+
+    if (data) {
+      const mappedArtworks: Artwork[] = data.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        price: item.price + ',00€',
+        priceValue: item.price,
+        image: item.image_url,
+        paper: item.metadata?.paper || 'Museum Heritage',
+        tags: item.metadata?.tags || [],
+        psychology: item.metadata?.psychology || 'balance'
+      }));
+      this.artworks.set(mappedArtworks);
+    }
   }
 
   setFilter(filter: string) {
     this.activeFilter.set(filter);
     if (filter === 'trending') {
-        this.currentSort.set('Tendencias Semanales');
+      this.currentSort.set('Tendencias Semanales');
     } else {
-        this.currentSort.set('Novedades');
+      this.currentSort.set('Novedades');
     }
   }
 

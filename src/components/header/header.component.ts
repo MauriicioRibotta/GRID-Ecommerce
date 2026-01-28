@@ -1,7 +1,9 @@
 
-import { Component, input, signal, effect, OnDestroy } from '@angular/core';
+import { Component, input, signal, effect, OnDestroy, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../services/auth.service';
+import { AdminService } from '../../services/admin.service';
 
 @Component({
   selector: 'app-header',
@@ -50,6 +52,10 @@ import { CommonModule } from '@angular/common';
           <a routerLink="/catalog" routerLinkActive="!text-primary" class="text-sm font-medium leading-normal hover:text-primary transition-colors" [class.text-white/70]="transparent()" [class.text-slate-500]="!transparent()" [class.dark:text-white]="!transparent()">Galería</a>
           <a routerLink="/designer" routerLinkActive="!text-primary" class="text-sm font-medium leading-normal hover:text-primary transition-colors" [class.text-white/70]="transparent()" [class.text-slate-500]="!transparent()" [class.dark:text-white]="!transparent()">Diseñador</a>
           <a routerLink="/about" routerLinkActive="!text-primary" class="text-sm font-medium leading-normal hover:text-primary transition-colors" [class.text-white/70]="transparent()" [class.text-slate-500]="!transparent()" [class.dark:text-white]="!transparent()">Sobre GRID</a>
+          
+          @if (admin.isAdmin) {
+             <a routerLink="/admin" routerLinkActive="!text-primary" class="text-sm font-bold leading-normal text-primary hover:text-primary/80 transition-colors bg-primary/10 px-3 py-1 rounded-full">Admin</a>
+          }
         </nav>
       </div>
 
@@ -81,7 +87,25 @@ import { CommonModule } from '@angular/common';
             <span class="material-symbols-outlined">shopping_bag</span>
             <span class="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">2</span>
           </button>
-           <div class="size-8 rounded-full bg-cover bg-center ring-1 ring-white/20 hidden md:block" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCTQElRzJheskXbGPou0I9kQtXDsDK9Qoqx4O6TJbpmnQZZS4M7oiUJ_yXxUBhEcoQpmyRW1P94G2rNZcwG2mWAuAd9cfWnlpWpMnm3eI-OAvibPnHvYM9pHxZKlyCo9V8VlK0szUzKLG3BYXZy5KVqALN_QEs8ZJ8FDoQdYi5rYTBBsEeFY2_l675oeVoGG4o_o2geX4SfO6S8GcW1-j_BrS0_YyEoMro_kD8WlTITqYyfXueHEjFIT3dE_C1h3GP8RQnptVYCLLdV");'></div>
+          
+          @if (auth.currentUser()) {
+             <div class="relative group">
+                <div class="size-8 rounded-full bg-cover bg-center ring-1 ring-white/20 hidden md:block cursor-pointer" 
+                     [style.background-image]="'url(' + (auth.profile['avatar_url'] || 'https://lh3.googleusercontent.com/aida-public/AB6AXuCTQElRzJheskXbGPou0I9kQtXDsDK9Qoqx4O6TJbpmnQZZS4M7oiUJ_yXxUBhEcoQpmyRW1P94G2rNZcwG2mWAuAd9cfWnlpWpMnm3eI-OAvibPnHvYM9pHxZKlyCo9V8VlK0szUzKLG3BYXZy5KVqALN_QEs8ZJ8FDoQdYi5rYTBBsEeFY2_l675oeVoGG4o_o2geX4SfO6S8GcW1-j_BrS0_YyEoMro_kD8WlTITqYyfXueHEjFIT3dE_C1h3GP8RQnptVYCLLdV') + ')'"></div>
+                <!-- Dropdown -->
+                <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-slate-200 dark:border-slate-800 overflow-hidden">
+                  <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
+                    <p class="text-xs font-bold text-slate-500 uppercase">Cuenta</p>
+                    <p class="text-sm truncate dark:text-white">{{ auth.currentUser()?.email }}</p>
+                  </div>
+                  <button (click)="auth.signOut()" class="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cerrar Sesión</button>
+                </div>
+             </div>
+          } @else {
+             <a routerLink="/login" class="text-sm font-bold bg-white text-black px-4 py-2 rounded-full hover:bg-gray-100 transition-colors hidden md:block">
+               Entrar
+             </a>
+          }
         </div>
       </div>
     </header>
@@ -119,6 +143,8 @@ import { CommonModule } from '@angular/common';
 export class HeaderComponent implements OnDestroy {
   transparent = input<boolean>(false);
   isOpen = signal<boolean>(false);
+  auth = inject(AuthService);
+  admin = inject(AdminService);
 
   constructor() {
     effect(() => {
